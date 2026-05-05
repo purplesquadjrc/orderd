@@ -1,39 +1,10 @@
 import { motion } from "framer-motion";
-
-const galleryImages = [
-  {
-    src: "https://images.unsplash.com/photo-1610189019599-f4e95e23f956?w=600&q=80",
-    alt: "Bridal saree draping - classic Nivi style",
-    label: "Classic Nivi Drape",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=600&q=80",
-    alt: "Bengali style saree draping",
-    label: "Bengali Style",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1617704548623-340376564e68?w=600&q=80",
-    alt: "Gujarati style saree",
-    label: "Gujarati Style",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=600&q=80",
-    alt: "Lehenga saree draping",
-    label: "Lehenga Saree",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&q=80",
-    alt: "Party look saree draping",
-    label: "Party Look",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1512316609839-ce289d3eba0a?w=600&q=80",
-    alt: "Pre-pleated saree setup",
-    label: "Pre-Pleated Style",
-  },
-];
+import { useGetGalleryImages } from "@workspace/api-client-react";
+import { ImageOff, Loader2 } from "lucide-react";
 
 export function Gallery() {
+  const { data: images, isLoading, isError } = useGetGalleryImages();
+
   return (
     <section id="gallery" className="py-24" style={{ background: "hsl(20, 40%, 95%)" }}>
       <div className="container mx-auto px-6 md:px-12">
@@ -46,28 +17,66 @@ export function Gallery() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {galleryImages.map((image, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, scale: 0.96 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6, delay: index * 0.1, ease: "easeOut" }}
-              viewport={{ once: true, margin: "-80px" }}
-              className="group relative overflow-hidden rounded-2xl aspect-[3/4] cursor-pointer"
-            >
-              <img
-                src={image.src}
-                alt={image.alt}
-                className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-110"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <div className="absolute bottom-0 left-0 right-0 p-6 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500">
-                <span className="text-white font-serif text-lg font-medium">{image.label}</span>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+        {isLoading && (
+          <div className="flex flex-col items-center justify-center py-24 gap-4 text-muted-foreground">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <p className="text-sm">Loading gallery...</p>
+          </div>
+        )}
+
+        {isError && (
+          <div className="flex flex-col items-center justify-center py-24 gap-4 text-muted-foreground">
+            <ImageOff className="w-10 h-10 text-primary/40" />
+            <p className="text-sm">Could not load gallery images. Please try again later.</p>
+          </div>
+        )}
+
+        {images && images.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-24 gap-3 text-muted-foreground">
+            <ImageOff className="w-10 h-10 text-primary/40" />
+            <p className="text-sm">No gallery images yet. Check back soon!</p>
+          </div>
+        )}
+
+        {images && images.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {images.map((image, index) => (
+              <motion.div
+                key={image.id}
+                initial={{ opacity: 0, scale: 0.96 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.6, delay: index * 0.08, ease: "easeOut" }}
+                viewport={{ once: true, margin: "-80px" }}
+                className="group relative overflow-hidden rounded-2xl aspect-[3/4] cursor-pointer"
+              >
+                <img
+                  src={image.imageUrl}
+                  alt={image.title}
+                  className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-110"
+                />
+                {/* Gradient overlay always present but more visible on hover */}
+                <div className="absolute inset-0 bg-gradient-to-t from-foreground/70 via-foreground/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+                {/* Text label — slides up on hover */}
+                <div className="absolute bottom-0 left-0 right-0 p-6 translate-y-3 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500">
+                  <h3 className="text-white font-serif text-xl font-semibold leading-snug mb-1">
+                    {image.title}
+                  </h3>
+                  <p className="text-white/75 text-sm leading-relaxed line-clamp-2">
+                    {image.description}
+                  </p>
+                </div>
+
+                {/* Subtle badge always visible at bottom */}
+                <div className="absolute bottom-4 left-4 right-4 group-hover:opacity-0 transition-opacity duration-300">
+                  <span className="inline-block bg-background/80 backdrop-blur-sm text-foreground/80 text-xs font-medium px-3 py-1 rounded-full">
+                    {image.title}
+                  </span>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

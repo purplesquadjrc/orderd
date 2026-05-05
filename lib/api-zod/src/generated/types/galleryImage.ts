@@ -5,9 +5,6 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-export interface HealthStatus {
-  status: string;
-}
 
 export interface GalleryImage {
   id: number;
@@ -16,14 +13,4 @@ export interface GalleryImage {
   description: string;
   createdAt: string;
   updatedAt: string;
-}
-
-export interface CreateGalleryImageRequest {
-  imageUrl: string;
-  title: string;
-  description: string;
-}
-
-export interface ErrorResponse {
-  error: string;
 }

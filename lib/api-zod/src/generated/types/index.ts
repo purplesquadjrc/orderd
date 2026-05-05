@@ -6,4 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./createGalleryImageRequest";
+export * from "./errorResponse";
+export * from "./galleryImage";
 export * from "./healthStatus";

@@ -14,3 +14,42 @@ import * as zod from "zod";
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
 });
+
+/**
+ * Returns all gallery images ordered by creation date
+ * @summary List all gallery images
+ */
+export const GetGalleryImagesResponseItem = zod.object({
+  id: zod.number(),
+  imageUrl: zod.string(),
+  title: zod.string(),
+  description: zod.string(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const GetGalleryImagesResponse = zod.array(GetGalleryImagesResponseItem);
+
+/**
+ * @summary Add a gallery image
+ */
+export const CreateGalleryImageBody = zod.object({
+  imageUrl: zod.string(),
+  title: zod.string(),
+  description: zod.string(),
+});
+
+/**
+ * @summary Delete a gallery image
+ */
+export const DeleteGalleryImageParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const DeleteGalleryImageResponse = zod.object({
+  id: zod.number(),
+  imageUrl: zod.string(),
+  title: zod.string(),
+  description: zod.string(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
