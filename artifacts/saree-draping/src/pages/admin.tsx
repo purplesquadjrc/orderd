@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   LayoutDashboard,
   CalendarCheck,
@@ -30,6 +30,9 @@ import {
   CheckCircle2,
   XCircle,
   Hourglass,
+  MessageCircle,
+  Mail,
+  Send,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -163,6 +166,157 @@ const TAB_COUNT_BG: Record<BookingStatus, string> = {
   cancelled: "bg-red-100 text-red-600",
 };
 
+interface NotificationData {
+  booking: Booking;
+  action: "accepted" | "cancelled";
+}
+
+function buildWhatsAppUrl(phone: string, name: string, service: string, date: string, action: "accepted" | "cancelled") {
+  const digits = phone.replace(/\D/g, "");
+  const waNumber = digits.startsWith("91") ? digits : `91${digits}`;
+  const msg =
+    action === "accepted"
+      ? `Hi ${name}! 🌸 Your booking for *${service}* on *${date}* has been *accepted* by Drape & Grace. We look forward to serving you! For any queries, feel free to reach us here.`
+      : `Hi ${name}, we regret to inform you that your booking for *${service}* on *${date}* has been *cancelled*. We apologise for the inconvenience. Please reach out to reschedule at your convenience. — Drape & Grace`;
+  return `https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`;
+}
+
+function buildMailtoUrl(name: string, service: string, date: string, action: "accepted" | "cancelled") {
+  const subject =
+    action === "accepted"
+      ? `Booking Confirmed — ${service} on ${date}`
+      : `Booking Cancellation — ${service} on ${date}`;
+  const body =
+    action === "accepted"
+      ? `Dear ${name},\n\nWe are delighted to confirm your booking!\n\nService: ${service}\nDate: ${date}\n\nOur team will arrive at your location on time. Please feel free to reach out if you have any special requests.\n\nWarm regards,\nDrape & Grace\ndrapeandgrace.in`
+      : `Dear ${name},\n\nWe regret to inform you that your booking for ${service} on ${date} has been cancelled.\n\nWe apologise for any inconvenience caused. Please contact us to reschedule at a convenient time.\n\nWarm regards,\nDrape & Grace\ndrapeandgrace.in`;
+  return `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
+function BookingNotificationToast({
+  data,
+  onDismiss,
+}: {
+  data: NotificationData;
+  onDismiss: () => void;
+}) {
+  const { booking, action } = data;
+  const isAccepted = action === "accepted";
+  const AUTO_DISMISS_MS = 9000;
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    timerRef.current = setTimeout(onDismiss, AUTO_DISMISS_MS);
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, [onDismiss]);
+
+  const waUrl    = buildWhatsAppUrl(booking.phone, booking.name, booking.service, booking.date, action);
+  const emailUrl = buildMailtoUrl(booking.name, booking.service, booking.date, action);
+  const message  = isAccepted ? "Your booking has been accepted" : "Your booking has been cancelled";
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: 80, scale: 0.94 }}
+      animate={{ opacity: 1, x: 0,  scale: 1 }}
+      exit={{    opacity: 0, x: 80, scale: 0.94 }}
+      transition={{ type: "spring", stiffness: 320, damping: 28 }}
+      className="fixed bottom-6 right-6 z-50 w-full max-w-sm"
+    >
+      <div className={`relative rounded-2xl shadow-2xl overflow-hidden border ${
+        isAccepted
+          ? "bg-white border-emerald-200"
+          : "bg-white border-red-200"
+      }`}>
+        {/* Top colour bar */}
+        <div className={`h-1 w-full ${isAccepted ? "bg-emerald-500" : "bg-red-500"}`}>
+          {/* Shrinking progress */}
+          <motion.div
+            className={`h-full ${isAccepted ? "bg-emerald-300" : "bg-red-300"} origin-right`}
+            initial={{ scaleX: 1 }}
+            animate={{ scaleX: 0 }}
+            transition={{ duration: AUTO_DISMISS_MS / 1000, ease: "linear" }}
+          />
+        </div>
+
+        <div className="p-5">
+          {/* Header row */}
+          <div className="flex items-start justify-between gap-3 mb-4">
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                isAccepted ? "bg-emerald-50" : "bg-red-50"
+              }`}>
+                {isAccepted
+                  ? <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                  : <XCircle      className="w-5 h-5 text-red-500" />}
+              </div>
+              <div>
+                <p className={`text-sm font-semibold ${isAccepted ? "text-emerald-700" : "text-red-600"}`}>
+                  {message}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Notify <span className="font-medium text-foreground">{booking.name}</span>
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={onDismiss}
+              className="p-1 rounded-lg hover:bg-muted/50 text-muted-foreground transition-colors flex-shrink-0"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Booking detail pill */}
+          <div className="bg-muted/40 rounded-xl px-4 py-2.5 mb-4 flex items-center justify-between text-sm">
+            <div>
+              <p className="font-medium text-foreground">{booking.service}</p>
+              <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+                <Clock className="w-3 h-3" /> {booking.date} &nbsp;·&nbsp;
+                <Phone className="w-3 h-3" /> {booking.phone}
+              </p>
+            </div>
+            <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+              isAccepted ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-600"
+            }`}>
+              {booking.id}
+            </span>
+          </div>
+
+          {/* Action label */}
+          <p className="text-xs text-muted-foreground mb-3 flex items-center gap-1.5">
+            <Send className="w-3 h-3" />
+            Send notification to client via:
+          </p>
+
+          {/* CTA buttons */}
+          <div className="flex gap-2.5">
+            <motion.a
+              href={waUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              className="flex-1 flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20b858] text-white text-sm font-semibold py-2.5 rounded-xl transition-colors shadow-sm"
+            >
+              <MessageCircle className="w-4 h-4" />
+              WhatsApp
+            </motion.a>
+            <motion.a
+              href={emailUrl}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              className="flex-1 flex items-center justify-center gap-2 bg-muted hover:bg-muted/80 text-foreground/80 border border-border text-sm font-semibold py-2.5 rounded-xl transition-colors"
+            >
+              <Mail className="w-4 h-4" />
+              Email
+            </motion.a>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 function BookingsSection({
   bookings,
   onStatusChange,
@@ -173,6 +327,7 @@ function BookingsSection({
   const [activeTab, setActiveTab] = useState<BookingStatus>("pending");
   const [search, setSearch] = useState("");
   const [confirmDialog, setConfirmDialog] = useState<{ id: string; action: BookingStatus } | null>(null);
+  const [notification, setNotification] = useState<NotificationData | null>(null);
 
   const tabBookings = bookings.filter(
     (b) =>
@@ -193,8 +348,12 @@ function BookingsSection({
 
   const confirmAction = () => {
     if (!confirmDialog) return;
+    const booking = bookings.find((b) => b.id === confirmDialog.id);
     onStatusChange(confirmDialog.id, confirmDialog.action);
     setConfirmDialog(null);
+    if (booking && (confirmDialog.action === "accepted" || confirmDialog.action === "cancelled")) {
+      setNotification({ booking, action: confirmDialog.action });
+    }
   };
 
   return (
@@ -422,6 +581,16 @@ function BookingsSection({
               </div>
             </motion.div>
           </>
+        )}
+      </AnimatePresence>
+
+      {/* Notification toast */}
+      <AnimatePresence>
+        {notification && (
+          <BookingNotificationToast
+            data={notification}
+            onDismiss={() => setNotification(null)}
+          />
         )}
       </AnimatePresence>
     </div>
