@@ -1,0 +1,44 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "L65m-zKiEQKiRmwf5Bhij"
+uri = "file://artifacts/saree-draping/public/images/hero.png"
+type = "image"
+title = "Hero saree draping bride"
+
+[[generated]]
+id = "_0MbUyX7qWmq3KdUtBWce"
+uri = "file://artifacts/saree-draping/public/images/gallery-1.png"
+type = "image"
+title = "Nivi drape saree"
+
+[[generated]]
+id = "wAScwI6qazrehpED6BGy2"
+uri = "file://artifacts/saree-draping/public/images/gallery-2.png"
+type = "image"
+title = "Bengali drape saree"
+
+[[generated]]
+id = "Cqemyhkx-wrwRAz9P8o84"
+uri = "file://artifacts/saree-draping/public/images/gallery-3.png"
+type = "image"
+title = "Gujarati drape saree"
+
+[[generated]]
+id = "s2fo1JsqF1Oh86yLP_Rv4"
+uri = "file://artifacts/saree-draping/public/images/gallery-4.png"
+type = "image"
+title = "Lehenga saree"
+
+[[generated]]
+id = "OVMMMHT02a7o0xEbndf2u"
+uri = "file://artifacts/saree-draping/public/images/gallery-5.png"
+type = "image"
+title = "Party look saree"
+
+[[generated]]
+id = "cx73BXTUphxCyQrJxgKwV"
+uri = "file://artifacts/saree-draping/public/images/gallery-6.png"
+type = "image"
+title = "Pre-pleated saree"

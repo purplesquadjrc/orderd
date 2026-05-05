@@ -25,3 +25,16 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - `pnpm --filter @workspace/api-server run dev` — run API server locally
 
 See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details.
+
+## Artifacts
+
+### Saree Draping Service — `artifacts/saree-draping`
+- **Type**: react-vite (frontend only, no backend)
+- **Preview path**: `/`
+- **Brand**: Drape & Grace
+- **Pages**: Single-page landing site with 9 sections
+  - Sticky navbar, Hero, Services, How It Works, Pricing, Gallery, Testimonials, Booking Form, Contact, Footer
+- **Stack**: React + Tailwind CSS + Framer Motion
+- **Colors**: Peach, gold, cream, pastel pink (Playfair Display font)
+- **Components**: `src/components/` — navbar, hero, services, how-it-works, pricing, gallery, testimonials, booking-form, contact, footer
+- **Home page**: `src/pages/home.tsx`

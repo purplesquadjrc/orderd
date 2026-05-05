@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Saree Draping Service"
+version = "1.0.0"
+id = "artifacts/saree-draping"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20517
+
+[services.development]
+run = "pnpm --filter @workspace/saree-draping run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/saree-draping", "run", "build" ]
+publicDir = "artifacts/saree-draping/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20517"
+BASE_PATH = "/"
