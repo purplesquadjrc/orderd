@@ -22,10 +22,15 @@ import {
   Clock,
   MapPin,
   Phone,
+  FileText,
+  Download,
+  Printer,
+  ChevronDown,
+  Sparkles,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-type Section = "dashboard" | "bookings" | "images" | "pricing";
+type Section = "dashboard" | "bookings" | "images" | "pricing" | "invoice";
 
 const BOOKINGS = [
   { id: "B001", name: "Priya Sharma", phone: "+91 98765 43210", date: "2026-05-10", location: "Koramangala, Bangalore", service: "Bridal Package", status: "confirmed", amount: 1499 },
@@ -417,11 +422,237 @@ function PricingSection() {
   );
 }
 
+const GST_RATE = 0.18;
+
+function InvoiceSection() {
+  const [selectedId, setSelectedId] = useState(BOOKINGS[0].id);
+  const [open, setOpen] = useState(false);
+  const booking = BOOKINGS.find((b) => b.id === selectedId)!;
+  const invoiceNo = `INV-2026-${booking.id}`;
+  const issueDate = new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" });
+  const gst = Math.round(booking.amount * GST_RATE);
+  const total = booking.amount + gst;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-start justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-serif font-bold text-foreground">Invoice Preview</h1>
+          <p className="text-muted-foreground text-sm mt-1">Select a booking to generate its invoice.</p>
+        </div>
+
+        {/* Booking picker */}
+        <div className="relative">
+          <button
+            onClick={() => setOpen(!open)}
+            className="flex items-center gap-2 border border-border bg-card px-4 py-2.5 rounded-xl text-sm font-medium text-foreground hover:bg-muted/30 transition-colors min-w-[220px] justify-between"
+          >
+            <span>{booking.id} — {booking.name}</span>
+            <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+          </button>
+          <AnimatePresence>
+            {open && (
+              <motion.div
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.15 }}
+                className="absolute right-0 top-full mt-1.5 bg-card border border-border rounded-xl shadow-lg z-10 overflow-hidden w-full min-w-[240px]"
+              >
+                {BOOKINGS.map((b) => (
+                  <button
+                    key={b.id}
+                    onClick={() => { setSelectedId(b.id); setOpen(false); }}
+                    className={`w-full flex items-center justify-between px-4 py-2.5 text-sm hover:bg-muted/40 transition-colors text-left ${b.id === selectedId ? "text-primary font-medium" : "text-foreground/80"}`}
+                  >
+                    <span>{b.id} — {b.name}</span>
+                    {b.id === selectedId && <Check className="w-3.5 h-3.5" />}
+                  </button>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+
+      {/* Action bar */}
+      <div className="flex gap-3 justify-end">
+        <button
+          onClick={() => window.print()}
+          className="flex items-center gap-2 border border-border bg-card px-5 py-2.5 rounded-xl text-sm font-medium text-foreground/80 hover:bg-muted/30 hover:text-foreground transition-all duration-200"
+        >
+          <Printer className="w-4 h-4" />
+          Print
+        </button>
+        <button className="flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors shadow-sm">
+          <Download className="w-4 h-4" />
+          Download PDF
+        </button>
+      </div>
+
+      {/* Invoice card */}
+      <motion.div
+        key={booking.id}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
+        className="bg-white border border-border/60 rounded-2xl shadow-sm overflow-hidden max-w-3xl mx-auto"
+        style={{ fontFamily: "system-ui, -apple-system, sans-serif" }}
+      >
+        {/* Header band */}
+        <div className="px-10 py-8 flex items-start justify-between gap-6" style={{ background: "hsl(20, 40%, 97%)" }}>
+          <div>
+            <p className="text-2xl font-serif font-bold" style={{ color: "hsl(20, 40%, 15%)" }}>Drape & Grace</p>
+            <p className="text-sm mt-1" style={{ color: "hsl(20, 20%, 50%)" }}>Professional Saree Draping Services</p>
+            <p className="text-xs mt-3 leading-relaxed" style={{ color: "hsl(20, 20%, 50%)" }}>
+              Koramangala, Bangalore — 560034<br />
+              +91 98765 43210 · drapeandgrace.in
+            </p>
+          </div>
+          <div className="text-right flex-shrink-0">
+            <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: "hsl(28, 60%, 65%)" }}>Invoice</p>
+            <p className="text-2xl font-bold" style={{ color: "hsl(20, 40%, 15%)" }}>{invoiceNo}</p>
+            <div className="mt-3 space-y-1 text-xs" style={{ color: "hsl(20, 20%, 50%)" }}>
+              <p><span className="font-medium" style={{ color: "hsl(20, 40%, 25%)" }}>Issue Date:</span> {issueDate}</p>
+              <p><span className="font-medium" style={{ color: "hsl(20, 40%, 25%)" }}>Due Date:</span> {booking.date}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Divider with status badge */}
+        <div className="px-10 py-3 border-y flex items-center justify-between" style={{ borderColor: "hsl(20, 30%, 90%)", background: "white" }}>
+          <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "hsl(20, 20%, 60%)" }}>
+            Bill To
+          </p>
+          <span className={`text-xs px-3 py-1 rounded-full font-semibold ${
+            booking.status === "confirmed" ? "bg-emerald-50 text-emerald-700" :
+            booking.status === "pending" ? "bg-amber-50 text-amber-700" :
+            "bg-slate-100 text-slate-600"
+          }`}>
+            {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+          </span>
+        </div>
+
+        {/* Client info */}
+        <div className="px-10 py-6 grid grid-cols-2 gap-6 border-b" style={{ borderColor: "hsl(20, 30%, 92%)" }}>
+          <div>
+            <p className="text-base font-semibold" style={{ color: "hsl(20, 40%, 15%)" }}>{booking.name}</p>
+            <p className="text-sm mt-1" style={{ color: "hsl(20, 20%, 50%)" }}>{booking.phone}</p>
+            <p className="text-sm mt-0.5 flex items-center gap-1" style={{ color: "hsl(20, 20%, 50%)" }}>
+              <MapPin style={{ width: 12, height: 12 }} />{booking.location}
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-xs font-medium uppercase tracking-wider mb-1" style={{ color: "hsl(20, 20%, 60%)" }}>Booking Reference</p>
+            <p className="text-sm font-semibold" style={{ color: "hsl(20, 40%, 20%)" }}>{booking.id}</p>
+            <p className="text-xs mt-2" style={{ color: "hsl(20, 20%, 55%)" }}>Session Date: <span className="font-medium">{booking.date}</span></p>
+          </div>
+        </div>
+
+        {/* Line items table */}
+        <div className="px-10 py-6">
+          <table className="w-full text-sm">
+            <thead>
+              <tr style={{ borderBottom: "1px solid hsl(20, 30%, 90%)" }}>
+                <th className="text-left pb-3 text-xs font-semibold uppercase tracking-wider" style={{ color: "hsl(20, 20%, 55%)" }}>Description</th>
+                <th className="text-center pb-3 text-xs font-semibold uppercase tracking-wider" style={{ color: "hsl(20, 20%, 55%)" }}>Qty</th>
+                <th className="text-right pb-3 text-xs font-semibold uppercase tracking-wider" style={{ color: "hsl(20, 20%, 55%)" }}>Rate</th>
+                <th className="text-right pb-3 text-xs font-semibold uppercase tracking-wider" style={{ color: "hsl(20, 20%, 55%)" }}>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style={{ borderBottom: "1px solid hsl(20, 30%, 94%)" }}>
+                <td className="py-4" style={{ color: "hsl(20, 40%, 15%)" }}>
+                  <p className="font-medium">{booking.service}</p>
+                  <p className="text-xs mt-0.5" style={{ color: "hsl(20, 20%, 55%)" }}>Professional saree draping at your location</p>
+                </td>
+                <td className="py-4 text-center" style={{ color: "hsl(20, 40%, 30%)" }}>1</td>
+                <td className="py-4 text-right" style={{ color: "hsl(20, 40%, 30%)" }}>₹{booking.amount.toLocaleString("en-IN")}</td>
+                <td className="py-4 text-right font-medium" style={{ color: "hsl(20, 40%, 15%)" }}>₹{booking.amount.toLocaleString("en-IN")}</td>
+              </tr>
+              <tr style={{ borderBottom: "1px solid hsl(20, 30%, 94%)" }}>
+                <td className="py-3" style={{ color: "hsl(20, 20%, 55%)" }}>
+                  <p className="text-sm">Home Visit & Travel</p>
+                </td>
+                <td className="py-3 text-center" style={{ color: "hsl(20, 20%, 55%)" }}>1</td>
+                <td className="py-3 text-right" style={{ color: "hsl(20, 20%, 55%)" }}>₹0</td>
+                <td className="py-3 text-right" style={{ color: "hsl(20, 20%, 55%)" }}>Included</td>
+              </tr>
+            </tbody>
+          </table>
+
+          {/* Totals */}
+          <div className="mt-6 ml-auto w-72 space-y-2.5">
+            <div className="flex justify-between text-sm" style={{ color: "hsl(20, 20%, 50%)" }}>
+              <span>Subtotal</span>
+              <span>₹{booking.amount.toLocaleString("en-IN")}</span>
+            </div>
+            <div className="flex justify-between text-sm" style={{ color: "hsl(20, 20%, 50%)" }}>
+              <span>GST (18%)</span>
+              <span>₹{gst.toLocaleString("en-IN")}</span>
+            </div>
+            <div className="flex justify-between text-sm" style={{ color: "hsl(20, 20%, 50%)" }}>
+              <span>Discount</span>
+              <span style={{ color: "hsl(142, 71%, 40%)" }}>— ₹0</span>
+            </div>
+            <div
+              className="flex justify-between items-center pt-3 mt-1"
+              style={{ borderTop: "2px solid hsl(20, 30%, 88%)" }}
+            >
+              <span className="font-bold text-base" style={{ color: "hsl(20, 40%, 15%)" }}>Total Due</span>
+              <span className="font-bold text-xl" style={{ color: "hsl(28, 60%, 55%)" }}>
+                ₹{total.toLocaleString("en-IN")}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Payment & Notes */}
+        <div className="px-10 pb-8 grid grid-cols-2 gap-8 border-t pt-6" style={{ borderColor: "hsl(20, 30%, 90%)" }}>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "hsl(20, 20%, 55%)" }}>Payment Methods</p>
+            <div className="space-y-1.5 text-sm" style={{ color: "hsl(20, 40%, 30%)" }}>
+              <p className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-current opacity-50 flex-shrink-0"></span>
+                UPI: drapeandgrace@upi
+              </p>
+              <p className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-current opacity-50 flex-shrink-0"></span>
+                Bank Transfer (details on request)
+              </p>
+              <p className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-current opacity-50 flex-shrink-0"></span>
+                Cash accepted at time of service
+              </p>
+            </div>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "hsl(20, 20%, 55%)" }}>Notes</p>
+            <p className="text-xs leading-relaxed" style={{ color: "hsl(20, 20%, 55%)" }}>
+              Payment is due on or before the date of service. Cancellations made less than 24 hours in advance may attract a ₹200 cancellation fee. Thank you for choosing Drape & Grace!
+            </p>
+          </div>
+        </div>
+
+        {/* Footer band */}
+        <div className="px-10 py-4 text-center" style={{ background: "hsl(20, 40%, 97%)" }}>
+          <p className="text-xs flex items-center justify-center gap-1.5" style={{ color: "hsl(20, 20%, 60%)" }}>
+            <Sparkles style={{ width: 12, height: 12, color: "hsl(28, 60%, 65%)" }} />
+            Thank you for trusting Drape & Grace with your special occasion.
+            <Sparkles style={{ width: 12, height: 12, color: "hsl(28, 60%, 65%)" }} />
+          </p>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 const NAV_ITEMS: { id: Section; label: string; icon: React.ReactNode }[] = [
   { id: "dashboard", label: "Dashboard", icon: <LayoutDashboard className="w-4 h-4" /> },
   { id: "bookings", label: "Bookings", icon: <CalendarCheck className="w-4 h-4" /> },
   { id: "images", label: "Images", icon: <Image className="w-4 h-4" /> },
   { id: "pricing", label: "Pricing", icon: <Tag className="w-4 h-4" /> },
+  { id: "invoice", label: "Invoice", icon: <FileText className="w-4 h-4" /> },
 ];
 
 export default function Admin() {
@@ -434,6 +665,7 @@ export default function Admin() {
       case "bookings": return <BookingsSection />;
       case "images": return <ImagesSection />;
       case "pricing": return <PricingSection />;
+      case "invoice": return <InvoiceSection />;
     }
   };
 
