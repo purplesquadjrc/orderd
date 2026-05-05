@@ -33,11 +33,18 @@ import {
   MessageCircle,
   Mail,
   Send,
+  CreditCard,
+  Wallet,
+  Banknote,
+  ToggleLeft,
+  ToggleRight,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 type Section = "dashboard" | "bookings" | "images" | "pricing" | "invoice";
-type BookingStatus = "pending" | "accepted" | "cancelled";
+type BookingStatus  = "pending" | "accepted" | "cancelled";
+type PaymentStatus  = "paid" | "unpaid";
+type PaymentMethod  = "UPI" | "Credit Card" | "Cash";
 
 interface Booking {
   id: string;
@@ -48,16 +55,26 @@ interface Booking {
   service: string;
   status: BookingStatus;
   amount: number;
+  paymentStatus: PaymentStatus;
+  paymentMethod: PaymentMethod;
 }
 
+const PAYMENT_METHODS: PaymentMethod[] = ["UPI", "Credit Card", "Cash"];
+
+const PAYMENT_METHOD_ICON: Record<PaymentMethod, React.ReactNode> = {
+  "UPI":         <Wallet     className="w-3.5 h-3.5" />,
+  "Credit Card": <CreditCard className="w-3.5 h-3.5" />,
+  "Cash":        <Banknote   className="w-3.5 h-3.5" />,
+};
+
 const INITIAL_BOOKINGS: Booking[] = [
-  { id: "B001", name: "Priya Sharma",  phone: "+91 98765 43210", date: "2026-05-10", location: "Koramangala, Bangalore",   service: "Bridal Package",  status: "accepted",  amount: 1499 },
-  { id: "B002", name: "Ananya Mehta", phone: "+91 91234 56789", date: "2026-05-11", location: "Banjara Hills, Hyderabad", service: "Premium Package", status: "pending",   amount: 2499 },
-  { id: "B003", name: "Kavya Reddy",  phone: "+91 99887 76655", date: "2026-05-12", location: "Indiranagar, Bangalore",   service: "Basic Package",   status: "accepted",  amount: 499  },
-  { id: "B004", name: "Deepa Nair",   phone: "+91 80001 23456", date: "2026-05-08", location: "Jubilee Hills, Hyderabad", service: "Bridal Package",  status: "cancelled", amount: 1499 },
-  { id: "B005", name: "Riya Pillai",  phone: "+91 77700 11223", date: "2026-05-09", location: "Whitefield, Bangalore",    service: "Party Draping",   status: "pending",   amount: 799  },
-  { id: "B006", name: "Sneha Kumar",  phone: "+91 93456 78901", date: "2026-05-14", location: "HSR Layout, Bangalore",    service: "Premium Package", status: "pending",   amount: 2499 },
-  { id: "B007", name: "Meera Joshi",  phone: "+91 88990 12345", date: "2026-05-15", location: "Madhapur, Hyderabad",     service: "Bridal Package",  status: "accepted",  amount: 1499 },
+  { id: "B001", name: "Priya Sharma",  phone: "+91 98765 43210", date: "2026-05-10", location: "Koramangala, Bangalore",   service: "Bridal Package",  status: "accepted",  amount: 1499, paymentStatus: "paid",   paymentMethod: "UPI"         },
+  { id: "B002", name: "Ananya Mehta", phone: "+91 91234 56789", date: "2026-05-11", location: "Banjara Hills, Hyderabad", service: "Premium Package", status: "pending",   amount: 2499, paymentStatus: "unpaid", paymentMethod: "UPI"         },
+  { id: "B003", name: "Kavya Reddy",  phone: "+91 99887 76655", date: "2026-05-12", location: "Indiranagar, Bangalore",   service: "Basic Package",   status: "accepted",  amount: 499,  paymentStatus: "unpaid", paymentMethod: "Cash"        },
+  { id: "B004", name: "Deepa Nair",   phone: "+91 80001 23456", date: "2026-05-08", location: "Jubilee Hills, Hyderabad", service: "Bridal Package",  status: "cancelled", amount: 1499, paymentStatus: "unpaid", paymentMethod: "Credit Card" },
+  { id: "B005", name: "Riya Pillai",  phone: "+91 77700 11223", date: "2026-05-09", location: "Whitefield, Bangalore",    service: "Party Draping",   status: "pending",   amount: 799,  paymentStatus: "unpaid", paymentMethod: "Cash"        },
+  { id: "B006", name: "Sneha Kumar",  phone: "+91 93456 78901", date: "2026-05-14", location: "HSR Layout, Bangalore",    service: "Premium Package", status: "pending",   amount: 2499, paymentStatus: "unpaid", paymentMethod: "UPI"         },
+  { id: "B007", name: "Meera Joshi",  phone: "+91 88990 12345", date: "2026-05-15", location: "Madhapur, Hyderabad",     service: "Bridal Package",  status: "accepted",  amount: 1499, paymentStatus: "paid",   paymentMethod: "Credit Card" },
 ];
 
 const GALLERY_IMAGES = [
@@ -320,9 +337,11 @@ function BookingNotificationToast({
 function BookingsSection({
   bookings,
   onStatusChange,
+  onPaymentUpdate,
 }: {
   bookings: Booking[];
   onStatusChange: (id: string, status: BookingStatus) => void;
+  onPaymentUpdate: (id: string, paymentStatus: PaymentStatus, paymentMethod: PaymentMethod) => void;
 }) {
   const [activeTab, setActiveTab] = useState<BookingStatus>("pending");
   const [search, setSearch] = useState("");
@@ -423,7 +442,10 @@ function BookingsSection({
                 {activeTab === "pending" && (
                   <th className="text-center px-6 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Actions</th>
                 )}
-                {activeTab !== "pending" && (
+                {activeTab === "accepted" && (
+                  <th className="text-center px-6 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Payment</th>
+                )}
+                {activeTab === "cancelled" && (
                   <th className="text-center px-6 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
                 )}
               </tr>
@@ -497,12 +519,62 @@ function BookingsSection({
                       </td>
                     )}
 
-                    {/* Status badge — Accepted / Cancelled tabs */}
-                    {activeTab !== "pending" && (
+                    {/* Payment controls — Accepted tab */}
+                    {activeTab === "accepted" && (
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col items-center gap-2 min-w-[160px]">
+                          {/* Method dropdown */}
+                          <div className="relative w-full">
+                            <select
+                              value={b.paymentMethod}
+                              onChange={(e) =>
+                                onPaymentUpdate(b.id, b.paymentStatus, e.target.value as PaymentMethod)
+                              }
+                              className="w-full appearance-none text-xs font-medium bg-muted/40 border border-border rounded-lg pl-7 pr-6 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer transition-all hover:bg-muted/60"
+                            >
+                              {PAYMENT_METHODS.map((m) => (
+                                <option key={m} value={m}>{m}</option>
+                              ))}
+                            </select>
+                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
+                              {PAYMENT_METHOD_ICON[b.paymentMethod]}
+                            </span>
+                            <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground pointer-events-none" />
+                          </div>
+                          {/* Paid / Unpaid toggle */}
+                          <button
+                            onClick={() =>
+                              onPaymentUpdate(
+                                b.id,
+                                b.paymentStatus === "paid" ? "unpaid" : "paid",
+                                b.paymentMethod
+                              )
+                            }
+                            className={`w-full flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 border ${
+                              b.paymentStatus === "paid"
+                                ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                                : "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
+                            }`}
+                          >
+                            <span className="flex items-center gap-1.5">
+                              {b.paymentStatus === "paid"
+                                ? <CheckCircle2 className="w-3.5 h-3.5" />
+                                : <Hourglass    className="w-3.5 h-3.5" />}
+                              {b.paymentStatus === "paid" ? "Paid" : "Unpaid"}
+                            </span>
+                            {b.paymentStatus === "paid"
+                              ? <ToggleRight className="w-4 h-4 text-emerald-500" />
+                              : <ToggleLeft  className="w-4 h-4 text-amber-400" />}
+                          </button>
+                        </div>
+                      </td>
+                    )}
+
+                    {/* Status badge — Cancelled tab */}
+                    {activeTab === "cancelled" && (
                       <td className="px-6 py-4 text-center">
                         <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium ${STATUS_STYLES[b.status]}`}>
-                          {b.status === "accepted"  && <CheckCircle2 className="w-3 h-3" />}
-                          {b.status === "cancelled" && <XCircle      className="w-3 h-3" />}
+                          <XCircle className="w-3 h-3" />
                           {STATUS_LABELS[b.status]}
                         </span>
                       </td>
@@ -790,11 +862,27 @@ function InvoiceSection({ bookings }: { bookings: Booking[] }) {
           </div>
         </div>
 
-        <div className="px-10 py-3 border-y flex items-center justify-between" style={{ borderColor: "hsl(20, 30%, 90%)", background: "white" }}>
+        <div className="px-10 py-3 border-y flex items-center justify-between gap-3 flex-wrap" style={{ borderColor: "hsl(20, 30%, 90%)", background: "white" }}>
           <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "hsl(20, 20%, 60%)" }}>Bill To</p>
-          <span className={`text-xs px-3 py-1 rounded-full font-semibold ${STATUS_STYLES[booking.status]}`}>
-            {STATUS_LABELS[booking.status]}
-          </span>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className={`text-xs px-3 py-1 rounded-full font-semibold ${STATUS_STYLES[booking.status]}`}>
+              {STATUS_LABELS[booking.status]}
+            </span>
+            <span className={`text-xs px-3 py-1 rounded-full font-semibold flex items-center gap-1.5 ${
+              booking.paymentStatus === "paid"
+                ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                : "bg-amber-50 text-amber-700 border border-amber-200"
+            }`}>
+              {booking.paymentStatus === "paid"
+                ? <CheckCircle2 className="w-3 h-3" />
+                : <Hourglass    className="w-3 h-3" />}
+              {booking.paymentStatus === "paid" ? "Paid" : "Unpaid"}
+            </span>
+            <span className="text-xs px-3 py-1 rounded-full font-semibold bg-muted text-muted-foreground border border-border flex items-center gap-1.5">
+              {PAYMENT_METHOD_ICON[booking.paymentMethod]}
+              {booking.paymentMethod}
+            </span>
+          </div>
         </div>
 
         <div className="px-10 py-6 grid grid-cols-2 gap-6 border-b" style={{ borderColor: "hsl(20, 30%, 92%)" }}>
@@ -846,16 +934,36 @@ function InvoiceSection({ bookings }: { bookings: Booking[] }) {
               <span className="font-bold text-base" style={{ color: "hsl(20, 40%, 15%)" }}>Total Due</span>
               <span className="font-bold text-xl" style={{ color: "hsl(28, 60%, 55%)" }}>₹{total.toLocaleString("en-IN")}</span>
             </div>
+            {/* Payment status row */}
+            <div className="flex justify-between items-center pt-2">
+              <span className="text-xs font-medium" style={{ color: "hsl(20, 20%, 55%)" }}>Payment Status</span>
+              <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full ${
+                booking.paymentStatus === "paid"
+                  ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                  : "bg-amber-50 text-amber-700 border border-amber-200"
+              }`}>
+                {booking.paymentStatus === "paid"
+                  ? <CheckCircle2 style={{ width: 11, height: 11 }} />
+                  : <Hourglass    style={{ width: 11, height: 11 }} />}
+                {booking.paymentStatus === "paid" ? "Paid" : "Unpaid"}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-xs font-medium" style={{ color: "hsl(20, 20%, 55%)" }}>Payment Method</span>
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-muted border border-border" style={{ color: "hsl(20, 40%, 30%)" }}>
+                {booking.paymentMethod}
+              </span>
+            </div>
           </div>
         </div>
 
         <div className="px-10 pb-8 grid grid-cols-2 gap-8 border-t pt-6" style={{ borderColor: "hsl(20, 30%, 90%)" }}>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "hsl(20, 20%, 55%)" }}>Payment Methods</p>
+            <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "hsl(20, 20%, 55%)" }}>Accepted Payment Methods</p>
             <div className="space-y-1.5 text-sm" style={{ color: "hsl(20, 40%, 30%)" }}>
-              <p className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-current opacity-50 flex-shrink-0"></span>UPI: drapeandgrace@upi</p>
-              <p className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-current opacity-50 flex-shrink-0"></span>Bank Transfer (details on request)</p>
-              <p className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-current opacity-50 flex-shrink-0"></span>Cash accepted at time of service</p>
+              <p className="flex items-center gap-2"><Wallet className="w-3.5 h-3.5 opacity-60 flex-shrink-0" />UPI: drapeandgrace@upi</p>
+              <p className="flex items-center gap-2"><CreditCard className="w-3.5 h-3.5 opacity-60 flex-shrink-0" />Credit / Debit Card</p>
+              <p className="flex items-center gap-2"><Banknote className="w-3.5 h-3.5 opacity-60 flex-shrink-0" />Cash at time of service</p>
             </div>
           </div>
           <div>
@@ -893,12 +1001,16 @@ export default function Admin() {
     setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status } : b)));
   };
 
+  const handlePaymentUpdate = (id: string, paymentStatus: PaymentStatus, paymentMethod: PaymentMethod) => {
+    setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, paymentStatus, paymentMethod } : b)));
+  };
+
   const pendingCount = bookings.filter((b) => b.status === "pending").length;
 
   const renderSection = () => {
     switch (active) {
       case "dashboard": return <DashboardSection bookings={bookings} />;
-      case "bookings":  return <BookingsSection bookings={bookings} onStatusChange={handleStatusChange} />;
+      case "bookings":  return <BookingsSection bookings={bookings} onStatusChange={handleStatusChange} onPaymentUpdate={handlePaymentUpdate} />;
       case "images":    return <ImagesSection />;
       case "pricing":   return <PricingSection />;
       case "invoice":   return <InvoiceSection bookings={bookings} />;
