@@ -811,7 +811,7 @@ function InvoiceSection({ bookings }: { bookings: Booking[] }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between flex-wrap gap-3">
+      <div className="no-print flex items-start justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-serif font-bold text-foreground">Invoice Preview</h1>
           <p className="text-muted-foreground text-sm mt-1">Select a booking to generate its invoice.</p>
@@ -836,16 +836,16 @@ function InvoiceSection({ bookings }: { bookings: Booking[] }) {
         </div>
       </div>
 
-      <div className="flex gap-3 justify-end">
+      <div className="no-print flex gap-3 justify-end">
         <button onClick={() => window.print()} className="flex items-center gap-2 border border-border bg-card px-5 py-2.5 rounded-xl text-sm font-medium text-foreground/80 hover:bg-muted/30 hover:text-foreground transition-all duration-200">
           <Printer className="w-4 h-4" />Print
         </button>
-        <button className="flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors shadow-sm">
+        <button onClick={() => alert("PDF export will be enabled in next phase.")} className="flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors shadow-sm">
           <Download className="w-4 h-4" />Download PDF
         </button>
       </div>
 
-      <motion.div key={booking.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, ease: "easeOut" }} className="bg-white border border-border/60 rounded-2xl shadow-sm overflow-hidden max-w-3xl mx-auto" style={{ fontFamily: "system-ui, -apple-system, sans-serif" }}>
+      <motion.div key={booking.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, ease: "easeOut" }} className="invoice-print-area bg-white border border-border/60 rounded-2xl shadow-sm overflow-hidden max-w-3xl mx-auto" style={{ fontFamily: "system-ui, -apple-system, sans-serif" }}>
         <div className="px-10 py-8 flex items-start justify-between gap-6" style={{ background: "hsl(20, 40%, 97%)" }}>
           <div>
             <p className="text-2xl font-serif font-bold" style={{ color: "hsl(20, 40%, 15%)" }}>Drape & Grace</p>
@@ -992,10 +992,26 @@ const NAV_ITEMS: { id: Section; label: string; icon: React.ReactNode }[] = [
   { id: "invoice",   label: "Invoice",   icon: <FileText       className="w-4 h-4" /> },
 ];
 
+const LS_KEY = "dng_bookings";
+
 export default function Admin() {
   const [active, setActive] = useState<Section>("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [bookings, setBookings] = useState<Booking[]>(INITIAL_BOOKINGS);
+
+  const [bookings, setBookings] = useState<Booking[]>(() => {
+    try {
+      const saved = localStorage.getItem(LS_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved) as Booking[];
+        if (parsed.length > 0) return parsed;
+      }
+    } catch { /* ignore */ }
+    return INITIAL_BOOKINGS;
+  });
+
+  useEffect(() => {
+    localStorage.setItem(LS_KEY, JSON.stringify(bookings));
+  }, [bookings]);
 
   const handleStatusChange = (id: string, status: BookingStatus) => {
     setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status } : b)));

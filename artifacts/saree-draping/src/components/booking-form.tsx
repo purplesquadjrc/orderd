@@ -10,6 +10,15 @@ const SERVICE_LABELS: Record<string, string> = {
   home: "Home Service",
 };
 
+const SERVICE_AMOUNTS: Record<string, number> = {
+  bridal: 1499,
+  party: 799,
+  prepleated: 499,
+  home: 499,
+};
+
+const LS_KEY = "dng_bookings";
+
 export function BookingForm() {
   const [loading, setLoading] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
@@ -29,6 +38,23 @@ export function BookingForm() {
     e.preventDefault();
     setLoading(true);
     setTimeout(() => {
+      const newBooking = {
+        id: `C${Date.now()}`,
+        name: form.name,
+        phone: form.phone,
+        date: form.date,
+        location: form.location,
+        service: SERVICE_LABELS[form.service] || form.service,
+        status: "pending" as const,
+        amount: SERVICE_AMOUNTS[form.service] ?? 499,
+        paymentStatus: "unpaid" as const,
+        paymentMethod: "UPI" as const,
+      };
+      try {
+        const existing = localStorage.getItem(LS_KEY);
+        const list = existing ? (JSON.parse(existing) as object[]) : [];
+        localStorage.setItem(LS_KEY, JSON.stringify([newBooking, ...list]));
+      } catch { /* ignore */ }
       setLoading(false);
       setShowPopup(true);
     }, 2000);

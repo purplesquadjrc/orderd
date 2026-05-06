@@ -146,3 +146,26 @@
     scroll-behavior: smooth;
   }
 }
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  aside {
+    display: none !important;
+  }
+  header {
+    display: none !important;
+  }
+  body {
+    background: white !important;
+  }
+  main {
+    padding: 0 !important;
+  }
+  .invoice-print-area {
+    max-width: 100% !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+}
